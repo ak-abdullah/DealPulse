@@ -1,0 +1,21 @@
+# Local secrets — never commit
+.env
+
+__pycache__/
+*.py[cod]
+
+.venv/
+venv/
+
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+*.db
+credentials.json
+token.json
+
+_docx_extract/
+_blueprint.zip
+_blueprint_plain.txt

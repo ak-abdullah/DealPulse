@@ -1,0 +1,4 @@
+langgraph
+hubspot-api-client
+python-dotenv
+pydantic-settings

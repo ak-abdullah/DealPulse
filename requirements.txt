@@ -1,4 +1,8 @@
 langgraph
+langchain-groq
+langchain-core
 hubspot-api-client
 python-dotenv
 pydantic-settings
+httpx
+beautifulsoup4

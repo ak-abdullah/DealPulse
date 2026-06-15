@@ -1,4 +1,4 @@
-"""CLI entry point: run the Week 1 pipeline (monitor stalled deals)."""
+"""CLI entry point: monitor stalled deals and research each with Groq."""
 
 from __future__ import annotations
 
@@ -36,8 +36,7 @@ def _format_deal(deal: DealInfo) -> str:
 
 
 def run() -> int:
-    LOGGER.info("Starting DealPulse pipeline (Week 1: monitor only)")
-
+    LOGGER.info("Starting Sentinel pipeline (Week 2: monitor + research + write)")
     final = _coerce_state(pipeline.invoke(AgentState()))
     stalled = final.stalled_deals
 
@@ -45,8 +44,32 @@ def run() -> int:
     for deal in stalled:
         print(_format_deal(deal))
 
+    if final.research_reports:
+        print("\nResearch reports:")
+        for deal in stalled:
+            report = final.research_reports.get(deal.deal_id)
+            score = final.deal_scores.get(deal.deal_id, "n/a")
+            company = deal.company_name or deal.deal_id
+            print(f"\n--- {company} [{score}] ---")
+            if report:
+                print(report)
+            else:
+                print("  (no report)")
+
+    if final.drafted_emails:
+        print("\nDrafted emails:")
+        for deal in stalled:
+            email = final.drafted_emails.get(deal.deal_id)
+            company = deal.company_name or deal.deal_id
+            if not email:
+                print(f"\n--- {company} ---\n  (no draft)")
+                continue
+            print(f"\n--- {company} ---")
+            print(f"Subject: {email.get('subject', '')}")
+            print(email.get("body", ""))
+
     if final.errors:
-        print("Errors:")
+        print("\nErrors:")
         for message in final.errors:
             print(f"  ! {message}")
         return 1

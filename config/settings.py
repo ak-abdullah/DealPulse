@@ -21,5 +21,14 @@ class Settings(BaseSettings):
         description="Deals with no activity longer than this are treated as stalled",
     )
 
+    groq_api_key: str = Field(
+        ...,
+        description="Groq API key for LLM research and writing",
+    )
+    groq_model: str = Field(
+        default="llama-3.3-70b-versatile",
+        description="Groq chat model id",
+    )
+
 
 settings = Settings()

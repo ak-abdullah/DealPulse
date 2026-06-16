@@ -80,15 +80,22 @@ def _paragraphs(body: str) -> list[str]:
     return paras or [body.strip()]
 
 
+# Gmail-like typography (Roboto is Gmail web UI; fallbacks for other clients).
+_EMAIL_TEXT_STYLE = (
+    "font-family:Roboto,Helvetica Neue,Helvetica,Arial,sans-serif;"
+    "font-size:13px;line-height:1.5;color:#202124;width:100%;"
+    "word-wrap:break-word;-webkit-font-smoothing:antialiased;"
+)
+_EMAIL_PARA_SPACING = "padding:0 0 12px 0;"
+
+
 def _body_to_html(body: str) -> str:
     """Table-based HTML for Gmail (div/CSS max-width is often stripped or ignored)."""
     rows = []
     for para in _paragraphs(body):
         inner = html.escape(para).replace("\n", "<br>")
         rows.append(
-            "<tr><td style=\"padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif;"
-            "font-size:15px;line-height:1.6;color:#222222;width:100%;"
-            "word-wrap:break-word;\">"
+            f"<tr><td style=\"{_EMAIL_PARA_SPACING}{_EMAIL_TEXT_STYLE}\">"
             f"{inner}</td></tr>"
         )
     content = "".join(rows)
@@ -98,7 +105,7 @@ def _body_to_html(body: str) -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:0;background-color:#ffffff;width:100%;">
+<body style="margin:0;padding:0;background-color:#ffffff;width:100%;{_EMAIL_TEXT_STYLE}">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
          style="border-collapse:collapse;width:100%;background-color:#ffffff;">
     <tr>

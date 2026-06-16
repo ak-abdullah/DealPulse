@@ -167,7 +167,7 @@ def _mock_stalled_deals() -> list[DealInfo]:
                 "deal_id": "mock-deal-1",
                 "company_name": "Mock Industries",
                 "contact_name": "Alex Buyer",
-                "contact_email": "alex@example.com",
+                "contact_email": "abdullah.corextech@gmail.com",
                 "deal_value": 25000.0,
                 "current_stage": "appointmentscheduled",
                 "days_since_activity": settings.stale_deal_days + 3,
@@ -291,3 +291,59 @@ def get_stalled_deals(days_threshold: int | None = None) -> list[DealInfo]:
 
     stalled.sort(key=lambda d: d.deal_value, reverse=True)
     return stalled
+
+
+# HubSpot association: note -> deal
+_NOTE_TO_DEAL_ASSOCIATION_TYPE_ID = 214
+
+
+def add_deal_note(deal_id: str, note_body: str) -> str:
+    """
+    Attach a CRM note to a deal.
+
+    Set ``HUBSPOT_USE_MOCK=true`` to skip the API call.
+    """
+    body = note_body.strip()
+    if not body:
+        raise HubSpotIntegrationError("Note body is required")
+
+    if _use_mock():
+        LOGGER.info(
+            "HUBSPOT_USE_MOCK enabled; would add note to deal %s",
+            deal_id,
+        )
+        return "mock-note-id"
+
+    from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate
+
+    client = _client()
+    timestamp_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+
+    payload = SimplePublicObjectInputForCreate(
+        properties={
+            "hs_timestamp": str(timestamp_ms),
+            "hs_note_body": body,
+        },
+        associations=[
+            {
+                "to": {"id": deal_id},
+                "types": [
+                    {
+                        "associationCategory": "HUBSPOT_DEFINED",
+                        "associationTypeId": _NOTE_TO_DEAL_ASSOCIATION_TYPE_ID,
+                    }
+                ],
+            }
+        ],
+    )
+
+    try:
+        result = client.crm.objects.notes.basic_api.create(
+            simple_public_object_input_for_create=payload
+        )
+    except Exception as exc:
+        raise HubSpotIntegrationError(f"HubSpot note create failed for deal {deal_id}") from exc
+
+    note_id = str(result.id)
+    LOGGER.info("Added HubSpot note %s on deal %s", note_id, deal_id)
+    return note_id

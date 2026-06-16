@@ -16,10 +16,28 @@ BODY:
 
 Rules:
 - Sound human and specific — reference something real from the research brief.
-- Do not use filler phrases like "I hope this email finds you well" or "Just circling back."
-- Keep the body under 150 words.
+- Do not use filler phrases like "I hope this email finds you well", "Just circling back", or "touch base."
+- Keep the body under 120 words.
 - One clear call to action (e.g. suggest a 15-minute call or ask one direct question).
 - Match tone to score: hot = confident and timely; warm = friendly and curious; cold = very brief, low pressure.
 - Do not invent facts, news, or meetings that are not in the research or deal context.
-- Sign off with the sender name provided (if any); otherwise use "Best," on its own line with no name.
+
+Deliverability (avoid spam filters):
+- Do NOT mention deal dollar amounts, contract value, or pricing in the email body.
+- Avoid mass-email phrases: "our solution", "potential collaboration", "add value", "leverage", "synergy".
+- Write like a personal note to one person, not a marketing blast.
+- Use a simple, specific subject (e.g. "Quick question before Thursday" not "Next Steps on...").
+
+Formatting (important):
+- Do NOT wrap lines manually. Each paragraph must be one continuous line of text.
+- You MUST insert a blank line between every section below (this is required):
+
+Hi <first name>,
+
+<one short paragraph>
+
+<one short question or call to action as its own paragraph>
+
+Best,
+<Sender name>
 """

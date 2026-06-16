@@ -36,7 +36,9 @@ def _format_deal(deal: DealInfo) -> str:
 
 
 def run() -> int:
-    LOGGER.info("Starting Sentinel pipeline (Week 2: monitor + research + write)")
+    LOGGER.info(
+        "Starting Sentinel pipeline (Week 2: monitor + research + write + send)"
+    )
     final = _coerce_state(pipeline.invoke(AgentState()))
     stalled = final.stalled_deals
 
@@ -65,8 +67,14 @@ def run() -> int:
                 print(f"\n--- {company} ---\n  (no draft)")
                 continue
             print(f"\n--- {company} ---")
+            print(f"To: {deal.contact_email or '(no email)'}")
             print(f"Subject: {email.get('subject', '')}")
             print(email.get("body", ""))
+
+    if final.actions_taken:
+        print("\nActions taken:")
+        for action in final.actions_taken:
+            print(f"  - {action}")
 
     if final.errors:
         print("\nErrors:")

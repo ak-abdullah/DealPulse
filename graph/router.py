@@ -39,7 +39,8 @@ def route_after_writer(state: AgentState) -> Literal["continue", "execute"]:
     return "continue" if drafted < total else "execute"
 
 
-def _executor_progress(state: AgentState | dict) -> int:
+def executor_progress(state: AgentState | dict) -> int:
+    """How many deals have completed an executor pass (send, skip, or fail)."""
     if isinstance(state, AgentState):
         actions = state.actions_taken
     else:
@@ -48,10 +49,19 @@ def _executor_progress(state: AgentState | dict) -> int:
     return sum(1 for action in actions if action.startswith(prefixes))
 
 
+def _executor_progress(state: AgentState | dict) -> int:
+    return executor_progress(state)
+
+
 def route_after_executor(state: AgentState) -> Literal["continue", "end"]:
     """Execute one deal per visit; loop until all deals are handled."""
     if isinstance(state, AgentState):
         total = len(state.stalled_deals)
     else:
         total = len(state.get("stalled_deals", []))
-    return "continue" if _executor_progress(state) < total else "end"
+    return "continue" if executor_progress(state) < total else "end"
+
+
+def route_after_error_handler(state: AgentState) -> Literal["continue", "end"]:
+    """After central error review, loop executor or finish the run."""
+    return route_after_executor(state)

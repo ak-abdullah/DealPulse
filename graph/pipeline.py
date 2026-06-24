@@ -7,9 +7,10 @@ from langgraph.graph import END, START, StateGraph
 from agents.action_executor import action_executor_node
 from agents.company_researcher import company_researcher_node
 from agents.email_writer import email_writer_node
+from agents.error_handler import error_handler_node
 from agents.pipeline_monitor import pipeline_monitor_node
 from graph.router import (
-    route_after_executor,
+    route_after_error_handler,
     route_after_monitor,
     route_after_researcher,
     route_after_writer,
@@ -18,13 +19,14 @@ from graph.state import AgentState
 
 
 def build_graph():
-    """Week 2 graph: monitor → research → write → send + CRM note."""
+    """Week 3 graph: monitor → research → write → send → error handler."""
     graph = StateGraph(AgentState)
 
     graph.add_node("monitor", pipeline_monitor_node)
     graph.add_node("researcher", company_researcher_node)
     graph.add_node("writer", email_writer_node)
     graph.add_node("executor", action_executor_node)
+    graph.add_node("error_handler", error_handler_node)
 
     graph.add_edge(START, "monitor")
     graph.add_conditional_edges(
@@ -51,9 +53,10 @@ def build_graph():
             "execute": "executor",
         },
     )
+    graph.add_edge("executor", "error_handler")
     graph.add_conditional_edges(
-        "executor",
-        route_after_executor,
+        "error_handler",
+        route_after_error_handler,
         {
             "continue": "executor",
             "end": END,

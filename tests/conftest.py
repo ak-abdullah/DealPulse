@@ -9,6 +9,7 @@ os.environ.setdefault("HUBSPOT_API_KEY", "test-hubspot-key")
 os.environ.setdefault("GROQ_API_KEY", "test-groq-key")
 os.environ.setdefault("HUBSPOT_USE_MOCK", "true")
 os.environ.setdefault("GMAIL_USE_MOCK", "true")
+os.environ.setdefault("LANGCHAIN_TRACING_V2", "false")
 
 import pytest
 

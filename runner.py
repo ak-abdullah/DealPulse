@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 from graph.pipeline import pipeline
 from graph.state import AgentState, DealInfo
+from observability.langsmith_config import invoke_config, tracing_enabled
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +34,13 @@ def run_pipeline(*, trigger: str = "manual") -> int:
     Returns process exit code (0 = success, 1 = errors recorded on state).
     """
     LOGGER.info("Starting Sentinel pipeline (trigger=%s)", trigger)
-    final = _coerce_state(pipeline.invoke(AgentState()))
+    if tracing_enabled():
+        project = os.getenv("LANGCHAIN_PROJECT", "default")
+        LOGGER.info("LangSmith tracing is on (project=%s)", project)
+
+    final = _coerce_state(
+        pipeline.invoke(AgentState(), config=invoke_config(trigger=trigger))
+    )
     stalled = final.stalled_deals
 
     print(f"Stalled deals: {len(stalled)}")

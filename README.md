@@ -164,9 +164,32 @@ pytest
 
 Mock modes are enabled in `tests/conftest.py`. Coverage includes routers, email normalization, HubSpot dedup, monitor fixtures, and executor skip/send paths.
 
+## LangSmith (optional)
+
+Tracing is **off by default**. Nothing is sent to LangSmith until you opt in.
+
+1. Create an account at [smith.langchain.com](https://smith.langchain.com)
+2. Create an API key under Settings
+3. Add to `.env`:
+
+```env
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=lsv2_pt_...
+LANGCHAIN_PROJECT=sentinel
+```
+
+4. Run the pipeline as usual:
+
+```bash
+python main.py
+```
+
+5. Open LangSmith, project `sentinel`, and inspect the trace for that run. You should see LangGraph nodes and Groq LLM calls under researcher and writer.
+
+Traces may include deal and contact fields from prompts. Turn tracing off with `LANGCHAIN_TRACING_V2=false` when you do not need it.
+
 ## What this repo does not include yet
 
-- LangSmith tracing
 - Hosted deployment manifests
 
 The core pipeline is complete. Scheduling is your responsibility via Task Scheduler, cron, or `--daemon`.

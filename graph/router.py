@@ -45,7 +45,12 @@ def executor_progress(state: AgentState | dict) -> int:
         actions = state.actions_taken
     else:
         actions = state.get("actions_taken", [])
-    prefixes = ("sent_email:", "skipped_send:", "failed_send:")
+    prefixes = (
+        "sent_email:",
+        "skipped_send:",
+        "skipped_duplicate:",
+        "failed_send:",
+    )
     return sum(1 for action in actions if action.startswith(prefixes))
 
 

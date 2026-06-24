@@ -296,6 +296,100 @@ def get_stalled_deals(days_threshold: int | None = None) -> list[DealInfo]:
 # HubSpot association: note -> deal
 _NOTE_TO_DEAL_ASSOCIATION_TYPE_ID = 214
 
+# Marker in CRM notes — must match action_executor._build_note prefix.
+FOLLOWUP_NOTE_MARKER = "DealPulse automated follow-up sent"
+
+_mock_followup_deals: set[str] = set()
+
+
+def _note_ids_for_deal(client: HubSpot, deal_id: str) -> list[str]:
+    """List note IDs associated with a deal (newest associations first)."""
+    ids: list[str] = []
+    after: str | None = None
+
+    while True:
+        kwargs: dict[str, Any] = {"limit": 100}
+        if after:
+            kwargs["after"] = after
+        try:
+            page = client.crm.associations.v4.basic_api.get_page(
+                object_type="deals",
+                object_id=deal_id,
+                to_object_type="notes",
+                **kwargs,
+            )
+        except Exception as exc:
+            raise HubSpotIntegrationError(
+                f"HubSpot note associations failed for deal {deal_id}"
+            ) from exc
+
+        for row in page.results or []:
+            note_id = getattr(row, "to_object_id", None)
+            if note_id is None and isinstance(row, dict):
+                note_id = row.get("to_object_id")
+            if note_id:
+                ids.append(str(note_id))
+
+        after = None
+        if page.paging and page.paging.next and page.paging.next.after:
+            after = page.paging.next.after
+        if not after:
+            break
+
+    return ids
+
+
+def _batch_read_note_bodies(client: HubSpot, note_ids: list[str]) -> list[str]:
+    if not note_ids:
+        return []
+
+    from hubspot.crm.objects.notes import (
+        BatchReadInputSimplePublicObjectId as NoteBatchReadInput,
+    )
+    from hubspot.crm.objects.notes import SimplePublicObjectId as NoteSimplePublicObjectId
+
+    bodies: list[str] = []
+    for chunk in _chunked(list(dict.fromkeys(note_ids)), 100):
+        body = NoteBatchReadInput(
+            properties_with_history=[],
+            inputs=[NoteSimplePublicObjectId(id=x) for x in chunk],
+            properties=["hs_note_body"],
+        )
+        try:
+            response = client.crm.objects.notes.batch_api.read(body)
+        except Exception as exc:
+            LOGGER.warning("HubSpot note batch read failed: %s", exc)
+            continue
+        for row in response.results or []:
+            props = row.properties or {}
+            text = (props.get("hs_note_body") or "").strip()
+            if text:
+                bodies.append(text)
+    return bodies
+
+
+def deal_has_followup_note(deal_id: str) -> bool:
+    """
+    Return True if this deal already has a DealPulse outbound follow-up note.
+
+    Used to skip duplicate sends on subsequent pipeline runs.
+    """
+    if _use_mock():
+        return deal_id in _mock_followup_deals
+
+    client = _client()
+    try:
+        note_ids = _note_ids_for_deal(client, deal_id)
+        bodies = _batch_read_note_bodies(client, note_ids)
+    except HubSpotIntegrationError:
+        LOGGER.warning(
+            "Could not check follow-up notes for deal %s; allowing send",
+            deal_id,
+        )
+        return False
+
+    return any(FOLLOWUP_NOTE_MARKER in body for body in bodies)
+
 
 def add_deal_note(deal_id: str, note_body: str) -> str:
     """
@@ -312,6 +406,8 @@ def add_deal_note(deal_id: str, note_body: str) -> str:
             "HUBSPOT_USE_MOCK enabled; would add note to deal %s",
             deal_id,
         )
+        if FOLLOWUP_NOTE_MARKER in body:
+            _mock_followup_deals.add(deal_id)
         return "mock-note-id"
 
     from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate

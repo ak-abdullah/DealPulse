@@ -10,7 +10,12 @@ from graph.state import AgentState
 
 LOGGER = logging.getLogger(__name__)
 
-_SEND_OUTCOMES = ("sent_email:", "skipped_send:", "failed_send:")
+_SEND_OUTCOMES = (
+    "sent_email:",
+    "skipped_send:",
+    "skipped_duplicate:",
+    "failed_send:",
+)
 
 
 def _errors_for_deal(errors: list[str], deal_id: str) -> list[str]:
@@ -41,6 +46,13 @@ def error_handler_node(state: AgentState) -> dict[str, Any]:
 
     if last_action.startswith("sent_email:"):
         LOGGER.debug("Error handler: %s sent successfully", company)
+        return {}
+
+    if last_action.startswith("skipped_duplicate:"):
+        LOGGER.info(
+            "Error handler: duplicate follow-up skipped for %s (CRM note exists)",
+            company,
+        )
         return {}
 
     if last_action.startswith("skipped_send:"):

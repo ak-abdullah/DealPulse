@@ -7,20 +7,33 @@ from typing import Any
 
 from graph.state import AgentState, DealInfo
 from tools.gmail import GmailIntegrationError, send_email
-from tools.hubspot import HubSpotIntegrationError, add_deal_note
+from tools.hubspot import (
+    FOLLOWUP_NOTE_MARKER,
+    HubSpotIntegrationError,
+    add_deal_note,
+    deal_has_followup_note,
+)
 
 LOGGER = logging.getLogger(__name__)
 
+_EXECUTOR_OUTCOMES = (
+    "sent_email:",
+    "skipped_send:",
+    "skipped_duplicate:",
+    "failed_send:",
+)
+
 
 def _executor_index(state: AgentState) -> int:
-    prefixes = ("sent_email:", "skipped_send:", "failed_send:")
-    return sum(1 for action in state.actions_taken if action.startswith(prefixes))
+    return sum(
+        1 for action in state.actions_taken if action.startswith(_EXECUTOR_OUTCOMES)
+    )
 
 
 def _build_note(deal: DealInfo, subject: str, gmail_id: str) -> str:
     company = deal.company_name or deal.deal_id
     return (
-        f"DealPulse automated follow-up sent to {deal.contact_email} "
+        f"{FOLLOWUP_NOTE_MARKER} to {deal.contact_email} "
         f"({company}).\n"
         f"Subject: {subject}\n"
         f"Gmail message id: {gmail_id}"
@@ -58,6 +71,15 @@ def action_executor_node(state: AgentState) -> dict[str, Any]:
             f"action_executor:{deal.deal_id}: contact has no email address"
         ]
         update["actions_taken"] = [f"skipped_send:{deal.deal_id}"]
+        return update
+
+    if deal_has_followup_note(deal.deal_id):
+        LOGGER.info(
+            "Skipping duplicate follow-up for %s (%s) — CRM note already exists",
+            company,
+            deal.deal_id,
+        )
+        update["actions_taken"] = [f"skipped_duplicate:{deal.deal_id}"]
         return update
 
     try:
